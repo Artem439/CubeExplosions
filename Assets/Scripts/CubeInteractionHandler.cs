@@ -1,55 +1,41 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Raycaster))]
-[RequireComponent(typeof(SpawnerCubes))]
-[RequireComponent(typeof(Explosion))]
+[RequireComponent(typeof(CubeSpawner))]
+[RequireComponent(typeof(Exploder))]
 public class CubeInteractionHandler : MonoBehaviour
 {
     private Raycaster _raycaster;
-    private SpawnerCubes _spawner;
-    private Explosion _explosion;
-    
-    private float _currentSpawnChance = 1.0f;
+    private CubeSpawner _cubeSpawner;
+    private Exploder _exploder;
 
     private void Awake()
     {
         _raycaster = GetComponent<Raycaster>();
-        _spawner = GetComponent<SpawnerCubes>();
-        _explosion = GetComponent<Explosion>();
+        _cubeSpawner = GetComponent<CubeSpawner>();
+        _exploder = GetComponent<Exploder>();
     }
     
     private void OnEnable()
     {
-        if (_raycaster != null)
-            _raycaster.OnObjectHit += OnObjectClicked;
+        _raycaster.CubeHit += HandleHit;
     }
 
     private void OnDisable()
     {
-        if (_raycaster != null)
-            _raycaster.OnObjectHit -= OnObjectClicked;
+        _raycaster.CubeHit -= HandleHit;
     }
 
-    private void OnObjectClicked(GameObject obj)
+    private void HandleHit(Cube cube)
     {
-        if (obj.CompareTag("Cube"))
+        if (Random.value <= cube.CurrentSplitChance)
         {
-            float randomValue = Random.value;
-
-            if (randomValue <= _currentSpawnChance)
-            {
-                float scale = obj.transform.localScale.x;
-                _spawner.SpawnCubes(obj.transform.position, scale);
-                _currentSpawnChance = 1.0f;
-                
-                Destroy(obj);
-            }
-            else
-            {
-                float scale = obj.transform.localScale.x;
-                _explosion.Explode(_spawner.SpawnCubes(obj.transform.position, scale));
-                _currentSpawnChance /= 2f;
-            }
+            IEnumerable<Cube> cubes = _cubeSpawner.Spawn(cube);
+            _exploder.Explode(cubes.Select(cube => cube.Rigidbody), cube.transform.position);
         }
+        
+        Destroy(cube.gameObject);
     }
 }

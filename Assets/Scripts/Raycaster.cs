@@ -4,35 +4,47 @@ using UnityEngine;
 [RequireComponent(typeof(InputReader))]
 public class Raycaster : MonoBehaviour
 {
-    public Action<GameObject> OnObjectHit;
+    [SerializeField] private float _maxDistance = 10f;
+    
+    private Camera _camera;
     
     private InputReader _inputReader;
     
-    [SerializeField] private Camera _camera;
+    public Action<Cube> CubeHit;
 
+    private void OnValidate()
+    {
+        if (_maxDistance < 0f)
+            _maxDistance = 1f;
+    }
+    
     private void Awake()
     {
         _inputReader = GetComponent<InputReader>();
+        _camera = Camera.main;
     }
     
     private void OnEnable()
     {
-        _inputReader.MouseButtonClicked += ReyCasting;
+        _inputReader.MouseButtonClicked += HandleInput;
     }
 
     private void OnDisable()
     {
-        _inputReader.MouseButtonClicked -= ReyCasting;
+        _inputReader.MouseButtonClicked -= HandleInput;
     }
 
-    private void ReyCasting()
+    private void HandleInput()
     {
         Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
         
-        if (Physics.Raycast(ray, out RaycastHit hit))
+        if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance))
         {
-            GameObject hitObject = hit.collider.gameObject;
-            OnObjectHit?.Invoke(hitObject);
+            if (hit.collider.TryGetComponent(out Cube cube))
+            {
+                CubeHit?.Invoke(cube);
+                Debug.Log(cube.name);
+            }
         }
     }
 }
