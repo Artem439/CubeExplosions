@@ -1,29 +1,40 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(Raycaster))]
+[RequireComponent(typeof(ColorChanger))]
 public class SpawnerCubes : MonoBehaviour
 {
-    [SerializeField] private GameObject cubePrefab;
-    [SerializeField] private float explosionForce = 10f;
-    [SerializeField] private float explosionRadius = 5f;
+    [SerializeField] private GameObject _cubePrefab;
+    
+    private ColorChanger _colorChanger;
 
-    public void SpawnCubes(Vector3 center, float parentScale)
+    public List<Rigidbody> SpawnCubes(Vector3 center, float parentScale)
     {
-        List<GameObject> spawnedCubes = new List<GameObject>();
+        List<Rigidbody> rigidbodies = new List<Rigidbody>();
+        Rigidbody rb;
+        GameObject cube;
         
         int newCubesCount = Random.Range(2, 7);
         float newScale = parentScale / 2f;
 
         for (int i = 0; i < newCubesCount; i++)
         {
-            CreateNewCube(center, newScale);
+            cube = CreateNewCube(center, newScale);
+            
+            if (cube.TryGetComponent(out rb ))
+                rigidbodies.Add(rb);
         }
-
-        ApplyExplosionForce(spawnedCubes, center, newScale);
+        
+        return rigidbodies;
     }
 
-    private void CreateNewCube(Vector3 center, float scale)
+    private void Awake()
+    {
+        _colorChanger = GetComponent<ColorChanger>();
+    }
+
+    private GameObject CreateNewCube(Vector3 center, float scale)
     {
         Vector3 randomOffset = new Vector3(
             Random.Range(-1f, 1f),
@@ -31,39 +42,18 @@ public class SpawnerCubes : MonoBehaviour
             Random.Range(-1f, 1f)
         ).normalized * 1f;
 
-        GameObject newCube = Instantiate(cubePrefab, center + randomOffset, Quaternion.identity);
+        GameObject newCube = Instantiate(_cubePrefab, center + randomOffset, Quaternion.identity);
         newCube.transform.localScale = Vector3.one * scale;
-
-        newCube.tag = "Cube";
         
-        Renderer renderer = newCube.GetComponent<Renderer>();
-        if (renderer != null)
-        {
-            renderer.material.color = Random.ColorHSV();
-        }
-
+        _colorChanger.ColorChange();
+        
         Rigidbody rb = newCube.GetComponent<Rigidbody>();
         if (rb == null)
         {
             rb = newCube.AddComponent<Rigidbody>();
         }
         rb.useGravity = true;
-    }
-
-    private void ApplyExplosionForce(List<GameObject> cubes, Vector3 center, float scale)
-    {
-        foreach (GameObject cube in cubes)
-        {
-            Rigidbody rb = cube.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                Vector3 direction = (cube.transform.position - center).normalized;
-                float distance = Vector3.Distance(cube.transform.position, center);
-                float force = explosionForce * (1f - Mathf.Clamp01(distance / explosionRadius));
-                force *= 1f / Mathf.Max(scale, 0.1f);
-
-                rb.AddForce(direction * force, ForceMode.Impulse);
-            }
-        }
+        
+        return newCube;
     }
 }
