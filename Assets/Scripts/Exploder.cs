@@ -12,4 +12,16 @@ public class Exploder : MonoBehaviour
             if (rigidbody != null)
                 rigidbody.AddExplosionForce(_explosionForce, center, _explosionRadius, 1);
     }
+
+    public IEnumerable<Rigidbody> GetRigidbodiesAroundBox(Vector3 center)
+    {
+        List<Rigidbody> rigidbodies = new ();
+        Collider[] hits = Physics.OverlapSphere(center, _explosionRadius);
+
+        foreach (Collider hit in hits)
+            if(hit.attachedRigidbody != null)
+                rigidbodies.Add(hit.attachedRigidbody);
+        
+        return rigidbodies;
+    }
 }

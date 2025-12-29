@@ -35,6 +35,10 @@ public class CubeInteractionHandler : MonoBehaviour
             IEnumerable<Cube> cubes = _cubeSpawner.Spawn(cube);
             _exploder.Explode(cubes.Select(cube => cube.Rigidbody), cube.transform.position);
         }
+        else
+        {
+            _exploder.Explode(_exploder.GetRigidbodiesAroundBox(cube.transform.position), cube.transform.position);
+        }
         
         Destroy(cube.gameObject);
     }
